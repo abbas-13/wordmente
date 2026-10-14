@@ -2,7 +2,7 @@ import { MAX_GUESSES, WORD_LENGTH } from './constants';
 import { isValidGuess } from './dictionary';
 import { validateHardMode } from './hardMode';
 import { isWinningRow, scoreGuess } from './scoring';
-import type { Evaluation, GameStatus } from './types';
+import type { Evaluation, GameMode, GameStatus } from './types';
 
 /**
  * Game state for a single puzzle.
@@ -14,6 +14,8 @@ import type { Evaluation, GameStatus } from './types';
 export interface GameState {
   /** The word being guessed. */
   solution: string;
+  /** Whether this board is today's daily puzzle or a practice round. */
+  mode: GameMode;
   /** Words accepted as guesses, beyond the solution itself. */
   dictionary: ReadonlySet<string>;
   /** Submitted guesses, oldest first. */
@@ -35,13 +37,14 @@ export type GameAction =
   | { type: 'DELETE_LETTER' }
   | { type: 'SUBMIT_GUESS' }
   | { type: 'REVEAL_COMPLETE' }
-  | { type: 'SET_SOLUTION'; solution: string }
+  | { type: 'START_GAME'; mode: GameMode; solution: string }
   | { type: 'TOGGLE_HARD_MODE' };
 
 export interface GameSetup {
   solution: string;
   dictionary: ReadonlySet<string>;
   hardMode?: boolean;
+  mode?: GameMode;
 }
 
 const SINGLE_LETTER = /^[a-z]$/i;
@@ -50,8 +53,10 @@ export const createGameState = ({
   solution,
   dictionary,
   hardMode = false,
+  mode = 'daily',
 }: GameSetup): GameState => ({
   solution,
+  mode,
   dictionary,
   guesses: [],
   evaluations: [],
@@ -147,8 +152,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'REVEAL_COMPLETE': {
       return state.isRevealing ? { ...state, isRevealing: false } : state;
     }
-    case 'SET_SOLUTION': {
-      return { ...createGameState({ ...state, solution: action.solution }) };
+    case 'START_GAME': {
+      return createGameState({ ...state, mode: action.mode, solution: action.solution });
     }
     case 'TOGGLE_HARD_MODE': {
       return { ...state, hardMode: !state.hardMode };

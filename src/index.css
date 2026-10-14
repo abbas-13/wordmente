@@ -47,3 +47,12 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
+.app__puzzle {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

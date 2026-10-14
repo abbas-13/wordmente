@@ -147,4 +147,54 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Out of guesses');
     expect(screen.getByRole('status')).toHaveTextContent('The word was CRANE');
   }, 15000);
+
+  it('shows which daily puzzle is being played', () => {
+    renderApp();
+    expect(screen.getByText(/^Puzzle #\d+$/)).toBeInTheDocument();
+  });
+
+  it('starts an empty practice game and drops the puzzle number', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+
+    expect(screen.getByRole('button', { name: 'Practice' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(lettersAt(0)).toEqual(['', '', '', '', '']);
+    expect(statesAt(0)).toEqual(['empty', 'empty', 'empty', 'empty', 'empty']);
+    expect(screen.queryByText(/^Puzzle #\d+$/)).not.toBeInTheDocument();
+  });
+
+  it('offers a new word only in practice', async () => {
+    const { user } = renderApp();
+    expect(screen.queryByRole('button', { name: 'New word' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    expect(screen.getByRole('button', { name: 'New word' })).toBeInTheDocument();
+  });
+
+  it('clears the board when a new practice word is drawn', async () => {
+    const { user } = renderApp();
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.keyboard(`${allowedGuesses[0]}{Enter}`);
+    await waitForInput();
+    expect(statesAt(0).some((state) => state !== 'empty')).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: 'New word' }));
+    expect(lettersAt(0)).toEqual(['', '', '', '', '']);
+    expect(statesAt(0)).toEqual(['empty', 'empty', 'empty', 'empty', 'empty']);
+  });
+
+  it('returns to the daily puzzle from practice', async () => {
+    const { user } = renderApp();
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.keyboard(`${allowedGuesses[0]}{Enter}`);
+    await waitForInput();
+    await user.click(screen.getByRole('button', { name: 'Daily' }));
+
+    expect(screen.getByText(/^Puzzle #\d+$/)).toBeInTheDocument();
+    expect(lettersAt(0)).toEqual(['', '', '', '', '']);
+  });
 });

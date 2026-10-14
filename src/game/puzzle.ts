@@ -27,6 +27,10 @@ export const dateForPuzzleIndex = (index: number, epoch: Date = GAME_EPOCH): Dat
   return new Date(epochMidnight + index * MS_PER_DAY);
 };
 
+/** Display number for a date: day one is puzzle #1. */
+export const puzzleNumberForDate = (date: Date, epoch: Date = GAME_EPOCH): number =>
+  puzzleIndexForDate(date, epoch) + 1;
+
 /** The solution for a given date. Deterministic, so it is identical for everyone. */
 export const dailyAnswer = (
   answers: readonly string[],

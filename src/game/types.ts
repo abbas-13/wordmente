@@ -6,6 +6,9 @@ export type Evaluation = 'correct' | 'present' | 'absent';
 /** State the board can be in. */
 export type GameStatus = 'IN_PROGRESS' | 'WIN' | 'FAIL';
 
+/** Which puzzle the board belongs to. */
+export type GameMode = 'daily' | 'practice';
+
 /**
  * Colour state of an on-screen keyboard key.
  *
