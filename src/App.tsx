@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer } from 'react';
 
 import Board from './components/Board';
+import GameControls from './components/GameControls';
 import Keyboard from './components/Keyboard';
 import Result from './components/Result';
 import Toast from './components/Toast';
@@ -8,9 +9,10 @@ import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
 import { computeKeyboardState } from './game/keyboard';
 import { describeOutcome } from './game/outcome';
-import { dailyAnswer } from './game/puzzle';
+import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
 import type { GameSetup } from './game/state';
 import { createGameState, gameReducer } from './game/state';
+import type { GameMode } from './game/types';
 import { useGameInput } from './hooks/useGameInput';
 
 /** How long input stays blocked after a guess. Keep in step with the tile flip in CSS. */
@@ -18,9 +20,14 @@ const REVEAL_DURATION_MS = 400;
 
 const dictionary = new Set<string>(allowedGuesses);
 
+/** Today's word, or a fresh draw for practice. */
+const solutionFor = (mode: GameMode): string =>
+  mode === 'daily' ? dailyAnswer(answers, new Date()) : randomAnswer(answers);
+
 const setUpDailyGame = (): GameSetup => ({
-  solution: dailyAnswer(answers, new Date()),
+  solution: solutionFor('daily'),
   dictionary,
+  mode: 'daily',
 });
 
 interface AppProps {
@@ -42,6 +49,9 @@ const App = ({ setup }: AppProps = {}) => {
   }, []);
   const handleBackspace = useCallback(() => {
     dispatch({ type: 'DELETE_LETTER' });
+  }, []);
+  const handleStart = useCallback((mode: GameMode) => {
+    dispatch({ type: 'START_GAME', mode, solution: solutionFor(mode) });
   }, []);
 
   const handleKey = useCallback(
@@ -83,7 +93,12 @@ const App = ({ setup }: AppProps = {}) => {
     <main className="app">
       <header className="app__header">
         <h1>Wordmente</h1>
+        <p className="app__puzzle">
+          {state.mode === 'daily' ? `Puzzle #${puzzleNumberForDate(new Date())}` : 'Practice round'}
+        </p>
       </header>
+
+      <GameControls mode={state.mode} onStart={handleStart} />
 
       <Board
         guesses={state.guesses}

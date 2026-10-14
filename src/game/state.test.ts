@@ -35,7 +35,7 @@ const play = (state: GameState, word: string): GameState =>
   revealComplete(submit(type(state, word)));
 
 describe('createGameState', () => {
-  it('starts an empty game in progress', () => {
+  it('starts an empty daily game in progress', () => {
     const state = start();
     expect(state.guesses).toEqual([]);
     expect(state.evaluations).toEqual([]);
@@ -44,10 +44,12 @@ describe('createGameState', () => {
     expect(state.hardMode).toBe(false);
     expect(state.isRevealing).toBe(false);
     expect(state.message).toBeUndefined();
+    expect(state.mode).toBe('daily');
   });
 
-  it('honours hard mode passed in', () => {
+  it('honours hard mode and mode passed in', () => {
     expect(start({ hardMode: true }).hardMode).toBe(true);
+    expect(start({ mode: 'practice' }).mode).toBe('practice');
   });
 });
 
@@ -191,16 +193,36 @@ describe('hard mode', () => {
   });
 });
 
-describe('setSolution', () => {
-  it('clears the board for a new solution and keeps hard mode', () => {
+describe('starting a game', () => {
+  it('switches mode and solution, clearing the board but keeping hard mode', () => {
     const played = play(start({ hardMode: true }), 'abide');
-    const next = gameReducer(played, { type: 'SET_SOLUTION', solution: 'crane' });
-    expect(next.solution).toBe('crane');
+    const next = gameReducer(played, {
+      type: 'START_GAME',
+      mode: 'practice',
+      solution: 'elder',
+    });
+
+    expect(next.mode).toBe('practice');
+    expect(next.solution).toBe('elder');
     expect(next.guesses).toEqual([]);
     expect(next.evaluations).toEqual([]);
     expect(next.current).toBe('');
     expect(next.status).toBe('IN_PROGRESS');
+    expect(next.isRevealing).toBe(false);
+    expect(next.message).toBeUndefined();
     expect(next.hardMode).toBe(true);
+  });
+
+  it('keeps the dictionary', () => {
+    const next = gameReducer(start(), { type: 'START_GAME', mode: 'practice', solution: 'elder' });
+    expect(next.dictionary).toBe(DICTIONARY);
+  });
+
+  it('starts a fresh game after one has finished', () => {
+    const won = play(start(), 'crane');
+    const next = gameReducer(won, { type: 'START_GAME', mode: 'daily', solution: 'crane' });
+    expect(next.status).toBe('IN_PROGRESS');
+    expect(next.guesses).toEqual([]);
   });
 });
 

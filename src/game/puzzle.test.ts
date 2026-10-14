@@ -5,6 +5,7 @@ import {
   dateForPuzzleIndex,
   GAME_EPOCH,
   puzzleIndexForDate,
+  puzzleNumberForDate,
   randomAnswer,
 } from './puzzle';
 
@@ -29,6 +30,13 @@ describe('puzzle calendar', () => {
 
   it('round-trips index and date', () => {
     expect(puzzleIndexForDate(dateForPuzzleIndex(42))).toBe(42);
+  });
+
+  it('counts puzzles from one for display', () => {
+    expect(puzzleNumberForDate(GAME_EPOCH)).toBe(1);
+    const second = new Date(GAME_EPOCH);
+    second.setDate(second.getDate() + 1);
+    expect(puzzleNumberForDate(second)).toBe(2);
   });
 });
 
