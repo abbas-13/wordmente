@@ -39,3 +39,16 @@
   min-width: 4.5rem;
   font-size: 0.6875rem;
 }
+
+.key:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.key:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
