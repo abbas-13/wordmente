@@ -35,3 +35,49 @@
   background: var(--absent);
   color: var(--muted);
 }
+
+/* The reveal: a 240ms flip staggered 40ms per column, so the last tile lands at
+   160 + 240 = the 400ms reveal window in App.tsx (REVEAL_DURATION_MS). Change one,
+   change the other. */
+.tile[data-state="correct"],
+.tile[data-state="present"],
+.tile[data-state="absent"] {
+  animation: flip 240ms ease both;
+}
+
+.tile:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.tile:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.tile:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.tile:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+@keyframes flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+
+  50% {
+    transform: rotateX(-90deg);
+  }
+
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* Same specificity as the animation rule above, so source order decides — keep last. */
+@media (prefers-reduced-motion: reduce) {
+  .tile[data-state] {
+    animation: none;
+  }
+}
