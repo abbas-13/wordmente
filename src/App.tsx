@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer } from 'react';
 
 import Board from './components/Board';
 import Keyboard from './components/Keyboard';
+import Toast from './components/Toast';
 import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
 import { computeKeyboardState } from './game/keyboard';
@@ -88,9 +89,7 @@ const App = ({ setup }: AppProps = {}) => {
         isInvalid={state.message !== undefined}
       />
 
-      <p className="app__status" role="status">
-        {state.message || null}
-      </p>
+      <Toast message={state.message} />
 
       <Keyboard
         keyStates={computeKeyboardState(state.guesses, state.evaluations)}
