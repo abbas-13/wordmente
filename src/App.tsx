@@ -2,10 +2,12 @@ import { useCallback, useEffect, useReducer } from 'react';
 
 import Board from './components/Board';
 import Keyboard from './components/Keyboard';
+import Result from './components/Result';
 import Toast from './components/Toast';
 import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
 import { computeKeyboardState } from './game/keyboard';
+import { describeOutcome } from './game/outcome';
 import { dailyAnswer } from './game/puzzle';
 import type { GameSetup } from './game/state';
 import { createGameState, gameReducer } from './game/state';
@@ -30,6 +32,7 @@ const App = ({ setup }: AppProps = {}) => {
   const [state, dispatch] = useReducer(gameReducer, setup ?? setUpDailyGame(), createGameState);
 
   const isPlaying = state.status === 'IN_PROGRESS' && !state.isRevealing;
+  const outcome = describeOutcome(state);
 
   const handleLetter = useCallback((letter: string) => {
     dispatch({ type: 'ADD_LETTER', letter });
@@ -89,7 +92,7 @@ const App = ({ setup }: AppProps = {}) => {
         isInvalid={state.message !== undefined}
       />
 
-      <Toast message={state.message} />
+      {outcome ? <Result outcome={outcome} /> : <Toast message={state.message} />}
 
       <Keyboard
         keyStates={computeKeyboardState(state.guesses, state.evaluations)}

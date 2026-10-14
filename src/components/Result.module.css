@@ -1,0 +1,22 @@
+.result {
+  display: grid;
+  gap: 0.125rem;
+  /* Matches the toast's reserved height so the board does not shift. */
+  min-height: 2.5rem;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

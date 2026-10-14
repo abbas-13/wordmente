@@ -8,8 +8,11 @@ import type { GameSetup } from './game/state';
 
 const GAME: GameSetup = {
   solution: 'crane',
-  dictionary: new Set(['slate', 'abide', 'crate', 'bleak']),
+  dictionary: new Set(['slate', 'abide', 'crate', 'bleak', 'elder', 'fable']),
 };
+
+/** Six valid words that are none of them the solution. */
+const WRONG_GUESSES = ['slate', 'abide', 'crate', 'bleak', 'elder', 'fable'];
 
 const renderApp = (setup: GameSetup = GAME) => {
   render(<App setup={setup} />);
@@ -26,6 +29,12 @@ const lettersAt = (index: number): string[] => cellsAt(index).map((cell) => cell
 
 const statesAt = (index: number): string[] =>
   cellsAt(index).map((cell) => cell.dataset.state ?? '');
+
+/** Input is locked while a row reveals, so wait for the keyboard to come back. */
+const waitForInput = () =>
+  waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Q' })).toBeEnabled();
+  });
 
 describe('App', () => {
   it('renders the board and the keyboard', () => {
@@ -98,9 +107,7 @@ describe('App', () => {
     expect(lettersAt(1)).toEqual(['', '', '', '', '']);
     expect(screen.getByRole('button', { name: 'Q' })).toBeDisabled();
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Q' })).toBeEnabled();
-    });
+    await waitForInput();
 
     await user.keyboard('c');
     expect(lettersAt(1)).toEqual(['c', '', '', '', '']);
@@ -116,4 +123,28 @@ describe('App', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(statesAt(0).every((state) => state !== 'empty')).toBe(true);
   });
+
+  it('announces a win with the number of guesses used', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await waitForInput();
+    await user.keyboard('crane{Enter}');
+
+    expect(screen.getByRole('status')).toHaveTextContent('Solved');
+    expect(screen.getByRole('status')).toHaveTextContent('In 2 of 6');
+  });
+
+  it('reveals the solution once the guesses run out', async () => {
+    const { user } = renderApp();
+
+    for (const [index, word] of WRONG_GUESSES.entries()) {
+      await user.keyboard(`${word}{Enter}`);
+      if (index < WRONG_GUESSES.length - 1) {
+        await waitForInput();
+      }
+    }
+
+    expect(screen.getByRole('status')).toHaveTextContent('Out of guesses');
+    expect(screen.getByRole('status')).toHaveTextContent('The word was CRANE');
+  }, 15000);
 });
