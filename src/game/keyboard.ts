@@ -18,19 +18,23 @@ export const KEYBOARD_RANK: Record<KeyboardState, number> = {
  * @param guesses     submitted words, in order
  * @param evaluations matching per-row evaluations
  */
-export function computeKeyboardState(
+export const computeKeyboardState = (
   guesses: readonly string[],
   evaluations: readonly (readonly Evaluation[])[],
-): Record<string, KeyboardState> {
+): Record<string, KeyboardState> => {
   const state: Record<string, KeyboardState> = {};
 
   guesses.forEach((guess, rowIndex) => {
     const row = evaluations[rowIndex];
-    if (!row) return;
+    if (!row) {
+      return;
+    }
     for (let i = 0; i < guess.length; i += 1) {
       const letter = guess[i];
       const evaluation = row[i];
-      if (!evaluation) continue;
+      if (!evaluation) {
+        continue;
+      }
       const current = state[letter] ?? 'unknown';
       if (KEYBOARD_RANK[evaluation] > KEYBOARD_RANK[current]) {
         state[letter] = evaluation;
@@ -39,4 +43,4 @@ export function computeKeyboardState(
   });
 
   return state;
-}
+};

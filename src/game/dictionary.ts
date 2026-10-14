@@ -5,12 +5,16 @@
  * solution itself — the second clause is why an unusual answer is never rejected
  * as "not in word list".
  */
-export function isValidGuess(
+export const isValidGuess = (
   guess: string,
   solution: string,
   dictionary: ReadonlySet<string> | readonly string[],
-): boolean {
-  if (guess === solution) return true;
-  if (guess.length === 0) return false;
+): boolean => {
+  if (guess === solution) {
+    return true;
+  }
+  if (guess.length === 0) {
+    return false;
+  }
   return 'has' in dictionary ? dictionary.has(guess) : dictionary.includes(guess);
-}
+};

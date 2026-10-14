@@ -14,38 +14,40 @@ export const GAME_EPOCH = new Date(2021, 5, 19);
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Midnight UTC of a date's calendar day, so DST and clock time cannot skew the index. */
-function startOfDay(date: Date): number {
-  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-}
+const startOfDay = (date: Date): number =>
+  Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 
 /** Puzzle number for a date. Day one is 0. */
-export function puzzleIndexForDate(date: Date, epoch: Date = GAME_EPOCH): number {
-  return Math.floor((startOfDay(date) - startOfDay(epoch)) / MS_PER_DAY);
-}
+export const puzzleIndexForDate = (date: Date, epoch: Date = GAME_EPOCH): number =>
+  Math.floor((startOfDay(date) - startOfDay(epoch)) / MS_PER_DAY);
 
 /** Calendar date of a puzzle number — the inverse of {@link puzzleIndexForDate}. */
-export function dateForPuzzleIndex(index: number, epoch: Date = GAME_EPOCH): Date {
+export const dateForPuzzleIndex = (index: number, epoch: Date = GAME_EPOCH): Date => {
   const epochMidnight = startOfDay(epoch);
   return new Date(epochMidnight + index * MS_PER_DAY);
-}
+};
 
 /** The solution for a given date. Deterministic, so it is identical for everyone. */
-export function dailyAnswer(
+export const dailyAnswer = (
   answers: readonly string[],
   date: Date,
   epoch: Date = GAME_EPOCH,
-): string {
-  if (answers.length === 0) throw new Error('answer list is empty');
+): string => {
+  if (answers.length === 0) {
+    throw new Error('answer list is empty');
+  }
   const index = puzzleIndexForDate(date, epoch);
   const wrapped = ((index % answers.length) + answers.length) % answers.length;
   return answers[wrapped] as string;
-}
+};
 
 /** A random answer, for practice mode. */
-export function randomAnswer(
+export const randomAnswer = (
   answers: readonly string[],
   random: () => number = Math.random,
-): string {
-  if (answers.length === 0) throw new Error('answer list is empty');
+): string => {
+  if (answers.length === 0) {
+    throw new Error('answer list is empty');
+  }
   return answers[Math.floor(random() * answers.length)] as string;
-}
+};

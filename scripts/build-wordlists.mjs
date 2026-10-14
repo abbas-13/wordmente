@@ -36,55 +36,47 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'src/data');
 
 /** Extract the embedded five-letter dictionary from a minified bundle. */
-function extractDictionary(bundleSource) {
+const extractDictionary = (bundleSource) => {
   const start = bundleSource.indexOf(DICTIONARY_ANCHOR);
   if (start === -1) {
     throw new Error(`dictionary anchor not found (${DICTIONARY_ANCHOR}) — wrong bundle?`);
   }
   const end = bundleSource.indexOf(']', start);
-  if (end === -1) throw new Error('unterminated dictionary array in bundle');
+  if (end === -1) {
+    throw new Error('unterminated dictionary array in bundle');
+  }
   const words = JSON.parse(bundleSource.slice(start, end + 1));
-  if (!Array.isArray(words) || words.length === 0) throw new Error('parsed dictionary is empty');
+  if (!Array.isArray(words) || words.length === 0) {
+    throw new Error('parsed dictionary is empty');
+  }
   return words;
-}
+};
 
 /** Fetch a frequency list and return its words, most frequent first. */
-async function fetchFrequencyWords() {
+const fetchFrequencyWords = async () => {
   const errors = [];
   for (const url of FREQUENCY_SOURCES) {
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const text = await response.text();
       // Both sources are "word count" lines, or a bare word per line.
       const words = text
         .split('\n')
         .map((line) => line.trim().split(/\s+/)[0] ?? '')
         .filter(Boolean);
-      if (words.length > 1000) return { url, words };
+      if (words.length > 1000) {
+        return { url, words };
+      }
       errors.push(`${url}: only ${words.length} words`);
     } catch (error) {
       errors.push(`${url}: ${error.message}`);
     }
   }
   throw new Error(`no frequency list available:\n  ${errors.join('\n  ')}`);
-}
-
-/** Curate the answer pool: common five-letter words that exist in the dictionary. */
-function curateAnswers(frequencyWords, allowed) {
-  const allowedSet = new Set(allowed);
-  const answers = [];
-  const seen = new Set();
-  for (const word of frequencyWords) {
-    if (answers.length >= MAX_ANSWERS) break;
-    const candidate = word.toLowerCase();
-    if (candidate.length !== 5 || !/^[a-z]+$/.test(candidate)) continue;
-    if (!allowedSet.has(candidate) || seen.has(candidate)) continue;
-    seen.add(candidate);
-    answers.push(candidate);
-  }
-  return shuffleDeterministically(answers);
-}
+};
 
 /**
  * Deterministic shuffle.
@@ -93,7 +85,7 @@ function curateAnswers(frequencyWords, allowed) {
  * would run aargh, abbey, abbot, abide... The seed keeps it stable across builds
  * and machines, so everyone still gets the same word on the same day.
  */
-function shuffleDeterministically(values) {
+const shuffleDeterministically = (values) => {
   const shuffled = [...values];
   let state = 0x9e3779b9 | 0;
   const nextRandom = () => {
@@ -110,9 +102,31 @@ function shuffleDeterministically(values) {
     shuffled[j] = a;
   }
   return shuffled;
-}
+};
 
-async function main() {
+/** Curate the answer pool: common five-letter words that exist in the dictionary. */
+const curateAnswers = (frequencyWords, allowed) => {
+  const allowedSet = new Set(allowed);
+  const answers = [];
+  const seen = new Set();
+  for (const word of frequencyWords) {
+    if (answers.length >= MAX_ANSWERS) {
+      break;
+    }
+    const candidate = word.toLowerCase();
+    if (candidate.length !== 5 || !/^[a-z]+$/.test(candidate)) {
+      continue;
+    }
+    if (!allowedSet.has(candidate) || seen.has(candidate)) {
+      continue;
+    }
+    seen.add(candidate);
+    answers.push(candidate);
+  }
+  return shuffleDeterministically(answers);
+};
+
+const main = async () => {
   const bundlePath = process.argv[2] ?? process.env.WORDLE_BUNDLE;
   if (!bundlePath) {
     throw new Error('usage: node scripts/build-wordlists.mjs /path/to/wordle.bundle.js');
@@ -142,7 +156,7 @@ async function main() {
     `sums to 5?    ${allowed.every((w) => w.length === 5) ? 'all dictionary words' : 'NO'}`,
   );
   console.log(`first answers ${answers.slice(0, 12).join(' ')}`);
-}
+};
 
 main().catch((error) => {
   console.error(error.message);

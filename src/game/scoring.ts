@@ -14,7 +14,7 @@ import type { Evaluation } from './types';
  * `speed` against `abide` therefore yields a single `present` for `e`, even
  * though the guess contains two of them.
  */
-export function scoreGuess(guess: string, solution: string): Evaluation[] {
+export const scoreGuess = (guess: string, solution: string): Evaluation[] => {
   const evaluations: Evaluation[] = Array(solution.length).fill('absent');
 
   // Guess positions still looking for a home; solution letters still available.
@@ -30,7 +30,9 @@ export function scoreGuess(guess: string, solution: string): Evaluation[] {
   }
 
   for (let i = 0; i < guess.length; i += 1) {
-    if (!unmatchedGuess[i]) continue;
+    if (!unmatchedGuess[i]) {
+      continue;
+    }
     const letter = guess[i];
     for (let j = 0; j < solution.length; j += 1) {
       if (availableSolution[j] && letter === solution[j]) {
@@ -42,9 +44,8 @@ export function scoreGuess(guess: string, solution: string): Evaluation[] {
   }
 
   return evaluations;
-}
+};
 
 /** True when every letter is in its final place. */
-export function isWinningRow(evaluations: readonly Evaluation[]): boolean {
-  return evaluations.length > 0 && evaluations.every((value) => value === 'correct');
-}
+export const isWinningRow = (evaluations: readonly Evaluation[]): boolean =>
+  evaluations.length > 0 && evaluations.every((value) => value === 'correct');

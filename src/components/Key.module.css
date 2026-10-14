@@ -1,0 +1,41 @@
+.key {
+  min-width: 2rem;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.key:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.key[data-state="correct"] {
+  border-color: var(--correct);
+  background: var(--correct);
+  color: #04231a;
+}
+
+.key[data-state="present"] {
+  border-color: var(--present);
+  background: var(--present);
+  color: #2a2103;
+}
+
+.key[data-state="absent"] {
+  border-color: var(--absent);
+  background: var(--absent);
+  color: var(--muted);
+}
+
+.wide {
+  min-width: 4.5rem;
+  font-size: 0.6875rem;
+}

@@ -20,12 +20,14 @@ const CONSTRAINING: readonly Evaluation[] = ['correct', 'present'];
  *
  * Only the immediately previous row is consulted, matching the original.
  */
-export function validateHardMode(
+export const validateHardMode = (
   guess: string,
   previousGuess: string | undefined,
   previousEvaluations: readonly Evaluation[] | undefined,
-): HardModeResult {
-  if (!guess || !previousGuess || !previousEvaluations) return { validGuess: true };
+): HardModeResult => {
+  if (!guess || !previousGuess || !previousEvaluations) {
+    return { validGuess: true };
+  }
 
   for (let i = 0; i < previousEvaluations.length; i += 1) {
     if (previousEvaluations[i] === 'correct' && guess[i] !== previousGuess[i]) {
@@ -39,9 +41,13 @@ export function validateHardMode(
   const required: Record<string, number> = {};
   for (let i = 0; i < previousEvaluations.length; i += 1) {
     const evaluation = previousEvaluations[i];
-    if (!evaluation || !CONSTRAINING.includes(evaluation)) continue;
+    if (!evaluation || !CONSTRAINING.includes(evaluation)) {
+      continue;
+    }
     const letter = previousGuess[i];
-    if (!letter) continue;
+    if (!letter) {
+      continue;
+    }
     required[letter] = (required[letter] ?? 0) + 1;
   }
 
@@ -60,4 +66,4 @@ export function validateHardMode(
   }
 
   return { validGuess: true };
-}
+};

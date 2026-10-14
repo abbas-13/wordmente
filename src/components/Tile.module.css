@@ -1,0 +1,37 @@
+.tile {
+  width: var(--tile-size);
+  height: var(--tile-size);
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.tile[data-state="typing"] {
+  border-color: var(--muted);
+}
+
+.tile[data-state="correct"] {
+  border-color: var(--correct);
+  background: var(--correct);
+  color: #04231a;
+}
+
+.tile[data-state="present"] {
+  border-color: var(--present);
+  background: var(--present);
+  color: #2a2103;
+}
+
+.tile[data-state="absent"] {
+  border-color: var(--absent);
+  background: var(--absent);
+  color: var(--muted);
+}
