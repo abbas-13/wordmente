@@ -1,0 +1,10 @@
+.toast {
+  margin: 0;
+  /* Reserved height so the board does not shift when a message appears. */
+  min-height: 1.25rem;
+  color: var(--invalid);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+}

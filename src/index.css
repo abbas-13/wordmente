@@ -47,11 +47,3 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-
-/* Reserved height so the board does not jump when a message appears. */
-.app__status {
-  margin: 0;
-  min-height: 1.25rem;
-  color: var(--invalid);
-  font-size: 0.875rem;
-}
