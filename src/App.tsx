@@ -75,6 +75,7 @@ const App = ({ setup }: AppProps = {}) => {
     setup ? (setup.hardMode ?? false) : loadHardMode(storage),
   );
   const [stats, setStats] = useState(() => loadStats(storage));
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   /**
    * One board per mode, with switching only deciding which is on screen.
@@ -147,7 +148,9 @@ const App = ({ setup }: AppProps = {}) => {
     onLetter: handleLetter,
     onEnter: handleEnter,
     onBackspace: handleBackspace,
-    enabled: isPlaying,
+    // The listener is on the window, so it would keep feeding the board behind
+    // an open modal unless the dialog's state is accounted for here.
+    enabled: isPlaying && !isStatsOpen,
   });
 
   useRevealTimer(daily.isRevealing, dispatchDaily);
@@ -191,6 +194,9 @@ const App = ({ setup }: AppProps = {}) => {
         <p className="app__puzzle">
           {state.mode === 'daily' ? `Puzzle #${puzzle}` : 'Practice round'}
         </p>
+        <div className="app__stats">
+          <Stats stats={stats} onOpenChange={setIsStatsOpen} />
+        </div>
       </header>
 
       <GameControls
@@ -201,6 +207,8 @@ const App = ({ setup }: AppProps = {}) => {
         onSetHardMode={handleSetHardMode}
       />
 
+      {outcome ? <Result outcome={outcome} /> : <Toast message={state.message} />}
+
       <Board
         guesses={state.guesses}
         evaluations={state.evaluations}
@@ -208,15 +216,11 @@ const App = ({ setup }: AppProps = {}) => {
         isInvalid={state.message !== undefined}
       />
 
-      {outcome ? <Result outcome={outcome} /> : <Toast message={state.message} />}
-
       <Keyboard
         keyStates={computeKeyboardState(state.guesses, state.evaluations)}
         onKey={handleKey}
         disabled={!isPlaying}
       />
-
-      <Stats stats={stats} />
     </main>
   );
 };
