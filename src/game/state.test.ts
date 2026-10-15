@@ -183,13 +183,13 @@ describe('hard mode', () => {
     expect(play(state, 'crate').guesses).toEqual(['rebut', 'crate']);
   });
 
-  it('toggles', () => {
+  it('sets the flag explicitly rather than flipping it', () => {
     const state = start();
-    expect(gameReducer(state, { type: 'TOGGLE_HARD_MODE' }).hardMode).toBe(true);
-    expect(
-      gameReducer(gameReducer(state, { type: 'TOGGLE_HARD_MODE' }), { type: 'TOGGLE_HARD_MODE' })
-        .hardMode,
-    ).toBe(false);
+    expect(gameReducer(state, { type: 'SET_HARD_MODE', hardMode: true }).hardMode).toBe(true);
+
+    const strict = start({ hardMode: true });
+    expect(gameReducer(strict, { type: 'SET_HARD_MODE', hardMode: false }).hardMode).toBe(false);
+    expect(gameReducer(strict, { type: 'SET_HARD_MODE', hardMode: true }).hardMode).toBe(true);
   });
 });
 

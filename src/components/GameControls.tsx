@@ -3,17 +3,27 @@ import styles from './GameControls.module.css';
 
 interface GameControlsProps {
   mode: GameMode;
-  /** Start a board for the given mode; practice draws a fresh word. */
-  onStart: (mode: GameMode) => void;
+  hardMode: boolean;
+  /** Switch which board is on screen. Neither board is reset. */
+  onSelect: (mode: GameMode) => void;
+  /** Draw a fresh practice word; the only thing that discards a board. */
+  onNewWord: () => void;
+  onSetHardMode: (hardMode: boolean) => void;
 }
 
-const GameControls = ({ mode, onStart }: GameControlsProps) => (
+const GameControls = ({
+  mode,
+  hardMode,
+  onSelect,
+  onNewWord,
+  onSetHardMode,
+}: GameControlsProps) => (
   <div className={styles.controls}>
     <button
       type="button"
       className={styles.mode}
       aria-pressed={mode === 'daily'}
-      onClick={() => onStart('daily')}
+      onClick={() => onSelect('daily')}
     >
       Daily
     </button>
@@ -21,15 +31,25 @@ const GameControls = ({ mode, onStart }: GameControlsProps) => (
       type="button"
       className={styles.mode}
       aria-pressed={mode === 'practice'}
-      onClick={() => onStart('practice')}
+      onClick={() => onSelect('practice')}
     >
       Practice
     </button>
     {mode === 'practice' && (
-      <button type="button" className={styles.mode} onClick={() => onStart('practice')}>
+      <button type="button" className={styles.mode} onClick={onNewWord}>
         New word
       </button>
     )}
+
+    <label className={styles.toggle}>
+      <input
+        type="checkbox"
+        className={styles.checkbox}
+        checked={hardMode}
+        onChange={(event) => onSetHardMode(event.target.checked)}
+      />
+      Hard mode
+    </label>
   </div>
 );
 

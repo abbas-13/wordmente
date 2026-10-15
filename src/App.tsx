@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 
 import Board from './components/Board';
 import GameControls from './components/GameControls';
@@ -10,25 +10,26 @@ import answers from './data/answers.json';
 import { computeKeyboardState } from './game/keyboard';
 import { describeOutcome } from './game/outcome';
 import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
-import type { GameSetup } from './game/state';
+import type { GameSetup, GameState } from './game/state';
 import { createGameState, gameReducer } from './game/state';
 import type { GameMode } from './game/types';
 import { useGameInput } from './hooks/useGameInput';
-
-/** How long input stays blocked after a guess. Keep in step with the tile flip in CSS. */
-const REVEAL_DURATION_MS = 400;
+import { useRevealTimer } from './hooks/useRevealTimer';
 
 const dictionary = new Set<string>(allowedGuesses);
 
-/** Today's word, or a fresh draw for practice. */
-const solutionFor = (mode: GameMode): string =>
-  mode === 'daily' ? dailyAnswer(answers, new Date()) : randomAnswer(answers);
-
 const setUpDailyGame = (): GameSetup => ({
-  solution: solutionFor('daily'),
+  solution: dailyAnswer(answers, new Date()),
   dictionary,
   mode: 'daily',
 });
+
+const setUpPracticeGame = (): GameState =>
+  createGameState({
+    solution: randomAnswer(answers),
+    dictionary,
+    mode: 'practice',
+  });
 
 interface AppProps {
   /** Overrides the daily puzzle; tests inject a known solution. */
@@ -36,22 +37,53 @@ interface AppProps {
 }
 
 const App = ({ setup }: AppProps = {}) => {
-  const [state, dispatch] = useReducer(gameReducer, setup ?? setUpDailyGame(), createGameState);
+  /**
+   * One board per mode, with switching only deciding which is on screen.
+   *
+   * Keeping them apart is what makes an accidental reset impossible: nothing
+   * except "New word" ever discards a board, so leaving and returning to the
+   * daily puzzle cannot be used to clear a bad guess.
+   */
+  const [activeMode, setActiveMode] = useState<GameMode>('daily');
+  const [daily, dispatchDaily] = useReducer(
+    gameReducer,
+    setup ?? setUpDailyGame(),
+    createGameState,
+  );
+  const [practice, dispatchPractice] = useReducer(gameReducer, undefined, setUpPracticeGame);
+
+  const state = activeMode === 'daily' ? daily : practice;
+  const dispatch = activeMode === 'daily' ? dispatchDaily : dispatchPractice;
 
   const isPlaying = state.status === 'IN_PROGRESS' && !state.isRevealing;
   const outcome = describeOutcome(state);
 
-  const handleLetter = useCallback((letter: string) => {
-    dispatch({ type: 'ADD_LETTER', letter });
-  }, []);
+  const handleLetter = useCallback(
+    (letter: string) => {
+      dispatch({ type: 'ADD_LETTER', letter });
+    },
+    [dispatch],
+  );
   const handleEnter = useCallback(() => {
     dispatch({ type: 'SUBMIT_GUESS' });
-  }, []);
+  }, [dispatch]);
   const handleBackspace = useCallback(() => {
     dispatch({ type: 'DELETE_LETTER' });
+  }, [dispatch]);
+  const handleSelect = useCallback((mode: GameMode) => {
+    setActiveMode(mode);
   }, []);
-  const handleStart = useCallback((mode: GameMode) => {
-    dispatch({ type: 'START_GAME', mode, solution: solutionFor(mode) });
+  const handleNewWord = useCallback(() => {
+    dispatchPractice({
+      type: 'START_GAME',
+      mode: 'practice',
+      solution: randomAnswer(answers),
+    });
+  }, []);
+  const handleSetHardMode = useCallback((hardMode: boolean) => {
+    // One preference for the whole app, so both boards are set to the same value.
+    dispatchDaily({ type: 'SET_HARD_MODE', hardMode });
+    dispatchPractice({ type: 'SET_HARD_MODE', hardMode });
   }, []);
 
   const handleKey = useCallback(
@@ -76,18 +108,8 @@ const App = ({ setup }: AppProps = {}) => {
     enabled: isPlaying,
   });
 
-  useEffect(() => {
-    if (!state.isRevealing) {
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      dispatch({ type: 'REVEAL_COMPLETE' });
-    }, REVEAL_DURATION_MS);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [state.isRevealing]);
+  useRevealTimer(daily.isRevealing, dispatchDaily);
+  useRevealTimer(practice.isRevealing, dispatchPractice);
 
   return (
     <main className="app">
@@ -98,7 +120,13 @@ const App = ({ setup }: AppProps = {}) => {
         </p>
       </header>
 
-      <GameControls mode={state.mode} onStart={handleStart} />
+      <GameControls
+        mode={state.mode}
+        hardMode={state.hardMode}
+        onSelect={handleSelect}
+        onNewWord={handleNewWord}
+        onSetHardMode={handleSetHardMode}
+      />
 
       <Board
         guesses={state.guesses}

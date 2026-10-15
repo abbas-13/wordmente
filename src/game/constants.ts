@@ -9,6 +9,9 @@ export const WORD_LENGTH = 5;
 
 export const MAX_GUESSES = 6;
 
+/** How long input stays blocked after a guess. Keep in step with the tile flip in CSS. */
+export const REVEAL_DURATION_MS = 400;
+
 export const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
 /** Keyboard row layout, top row first. */
