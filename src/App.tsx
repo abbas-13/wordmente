@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameControls from './components/GameControls';
@@ -12,24 +12,51 @@ import { describeOutcome } from './game/outcome';
 import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
 import type { GameSetup, GameState } from './game/state';
 import { createGameState, gameReducer } from './game/state';
+import {
+  getStorage,
+  loadHardMode,
+  readDaily,
+  saveDaily,
+  saveHardMode,
+  toDailySave,
+} from './game/storage';
 import type { GameMode } from './game/types';
 import { useGameInput } from './hooks/useGameInput';
 import { useRevealTimer } from './hooks/useRevealTimer';
+import { useToday } from './hooks/useToday';
 
 const dictionary = new Set<string>(allowedGuesses);
 
-const setUpDailyGame = (): GameSetup => ({
-  solution: dailyAnswer(answers, new Date()),
-  dictionary,
-  mode: 'daily',
-});
+interface DailyStart {
+  /** An injected setup stands in for a real daily game, so nothing is read or written. */
+  setup?: GameSetup;
+  storage?: Storage;
+  puzzle: number;
+  solution: string;
+  hardMode: boolean;
+}
 
-const setUpPracticeGame = (): GameState =>
-  createGameState({
-    solution: randomAnswer(answers),
-    dictionary,
-    mode: 'practice',
-  });
+/**
+ * Today's daily board: the saved game when there is one for this puzzle, otherwise a new board.
+ */
+const startDailyGame = ({ setup, storage, puzzle, solution, hardMode }: DailyStart): GameState => {
+  if (setup) {
+    return createGameState(setup);
+  }
+
+  const fresh = createGameState({ solution, dictionary, mode: 'daily', hardMode });
+  const saved = readDaily(storage, { puzzle, solution });
+  if (!saved) {
+    return fresh;
+  }
+
+  return {
+    ...fresh,
+    guesses: saved.guesses,
+    evaluations: saved.evaluations,
+    status: saved.status,
+  };
+};
 
 interface AppProps {
   /** Overrides the daily puzzle; tests inject a known solution. */
@@ -37,6 +64,15 @@ interface AppProps {
 }
 
 const App = ({ setup }: AppProps = {}) => {
+  /** Resolved once: reaching for storage can throw outright where it is blocked. */
+  const [storage] = useState(getStorage);
+  const today = useToday();
+  const puzzle = puzzleNumberForDate(today);
+  const solution = dailyAnswer(answers, today);
+  const [startingHardMode] = useState(() =>
+    setup ? (setup.hardMode ?? false) : loadHardMode(storage),
+  );
+
   /**
    * One board per mode, with switching only deciding which is on screen.
    *
@@ -45,18 +81,24 @@ const App = ({ setup }: AppProps = {}) => {
    * daily puzzle cannot be used to clear a bad guess.
    */
   const [activeMode, setActiveMode] = useState<GameMode>('daily');
-  const [daily, dispatchDaily] = useReducer(
-    gameReducer,
-    setup ?? setUpDailyGame(),
-    createGameState,
+  const [daily, dispatchDaily] = useReducer(gameReducer, undefined, () =>
+    startDailyGame({ setup, storage, puzzle, solution, hardMode: startingHardMode }),
   );
-  const [practice, dispatchPractice] = useReducer(gameReducer, undefined, setUpPracticeGame);
+  const [practice, dispatchPractice] = useReducer(gameReducer, undefined, () =>
+    createGameState({
+      solution: randomAnswer(answers),
+      dictionary,
+      mode: 'practice',
+      hardMode: startingHardMode,
+    }),
+  );
 
   const state = activeMode === 'daily' ? daily : practice;
   const dispatch = activeMode === 'daily' ? dispatchDaily : dispatchPractice;
 
   const isPlaying = state.status === 'IN_PROGRESS' && !state.isRevealing;
   const outcome = describeOutcome(state);
+  const { guesses, evaluations, status, hardMode } = daily;
 
   const handleLetter = useCallback(
     (letter: string) => {
@@ -74,16 +116,12 @@ const App = ({ setup }: AppProps = {}) => {
     setActiveMode(mode);
   }, []);
   const handleNewWord = useCallback(() => {
-    dispatchPractice({
-      type: 'START_GAME',
-      mode: 'practice',
-      solution: randomAnswer(answers),
-    });
+    dispatchPractice({ type: 'START_GAME', mode: 'practice', solution: randomAnswer(answers) });
   }, []);
-  const handleSetHardMode = useCallback((hardMode: boolean) => {
+  const handleSetHardMode = useCallback((next: boolean) => {
     // One preference for the whole app, so both boards are set to the same value.
-    dispatchDaily({ type: 'SET_HARD_MODE', hardMode });
-    dispatchPractice({ type: 'SET_HARD_MODE', hardMode });
+    dispatchDaily({ type: 'SET_HARD_MODE', hardMode: next });
+    dispatchPractice({ type: 'SET_HARD_MODE', hardMode: next });
   }, []);
 
   const handleKey = useCallback(
@@ -111,12 +149,35 @@ const App = ({ setup }: AppProps = {}) => {
   useRevealTimer(daily.isRevealing, dispatchDaily);
   useRevealTimer(practice.isRevealing, dispatchPractice);
 
+  useEffect(() => {
+    if (setup || !storage) {
+      return;
+    }
+    saveDaily(storage, toDailySave({ solution, guesses, evaluations, status }, puzzle));
+  }, [setup, storage, puzzle, solution, guesses, evaluations, status]);
+
+  useEffect(() => {
+    if (setup || !storage) {
+      return;
+    }
+    saveHardMode(storage, hardMode);
+  }, [setup, storage, hardMode]);
+
+  const startedPuzzle = useRef(puzzle);
+  useEffect(() => {
+    if (startedPuzzle.current === puzzle) {
+      return;
+    }
+    startedPuzzle.current = puzzle;
+    dispatchDaily({ type: 'START_GAME', mode: 'daily', solution });
+  }, [puzzle, solution]);
+
   return (
     <main className="app">
       <header className="app__header">
         <h1>Wordmente</h1>
         <p className="app__puzzle">
-          {state.mode === 'daily' ? `Puzzle #${puzzleNumberForDate(new Date())}` : 'Practice round'}
+          {state.mode === 'daily' ? `Puzzle #${puzzle}` : 'Practice round'}
         </p>
       </header>
 
