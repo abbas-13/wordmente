@@ -21,10 +21,13 @@ import {
   DAILY_KEY,
   getStorage,
   HARD_MODE_KEY,
+  HIGH_CONTRAST_KEY,
   loadHardMode,
+  loadHighContrast,
   readDaily,
   saveDaily,
   saveHardMode,
+  saveHighContrast,
   toDailySave,
 } from './game/storage';
 import type { GameMode } from './game/types';
@@ -80,6 +83,9 @@ const App = ({ setup }: AppProps = {}) => {
   const resetAt = useMemo(() => nextResetAt(today), [today]);
   const [startingHardMode] = useState(() =>
     setup ? (setup.hardMode ?? false) : loadHardMode(storage),
+  );
+  const [highContrast, setHighContrast] = useState(() =>
+    setup ? false : loadHighContrast(storage),
   );
   const [stats, setStats] = useState(() => loadStats(storage));
   const [isStatsOpen, setIsStatsOpen] = useState(false);
@@ -182,6 +188,30 @@ const App = ({ setup }: AppProps = {}) => {
   }, [setup, storage, hardMode]);
 
   useEffect(() => {
+    if (setup || !storage) {
+      return;
+    }
+    saveHighContrast(storage, highContrast);
+  }, [setup, storage, highContrast]);
+
+  /**
+   * Publish the palette choice on the document, where the stylesheet can see it,
+   * and take it back off on unmount so nothing is left behind.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (highContrast) {
+      root.setAttribute('data-contrast', 'high');
+    } else {
+      root.removeAttribute('data-contrast');
+    }
+
+    return () => {
+      root.removeAttribute('data-contrast');
+    };
+  }, [highContrast]);
+
+  useEffect(() => {
     if (setup || !storage || status === 'IN_PROGRESS') {
       return;
     }
@@ -222,6 +252,11 @@ const App = ({ setup }: AppProps = {}) => {
         const preference = loadHardMode(storage);
         dispatchDaily({ type: 'SET_HARD_MODE', hardMode: preference });
         dispatchPractice({ type: 'SET_HARD_MODE', hardMode: preference });
+        return;
+      }
+
+      if (event.key === HIGH_CONTRAST_KEY) {
+        setHighContrast(loadHighContrast(storage));
       }
     };
 
@@ -257,9 +292,11 @@ const App = ({ setup }: AppProps = {}) => {
         mode={state.mode}
         hardMode={state.hardMode}
         hardModeLocked={hardModeLocked}
+        highContrast={highContrast}
         onSelect={handleSelect}
         onNewWord={handleNewWord}
         onSetHardMode={handleSetHardMode}
+        onSetHighContrast={setHighContrast}
       />
 
       {outcome ? <Result outcome={outcome} /> : <Toast message={state.message} />}
