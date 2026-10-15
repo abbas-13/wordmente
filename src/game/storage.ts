@@ -2,9 +2,10 @@ import { MAX_GUESSES, WORD_LENGTH } from './constants';
 import type { GameState } from './state';
 import type { Evaluation, GameStatus } from './types';
 
-/** Where this app keeps the daily board, the player's hard mode preference and their tally. */
+/** Where this app keeps the daily board, the player's preferences and their tally. */
 export const DAILY_KEY = 'wordmente-daily';
 export const HARD_MODE_KEY = 'wordmente-hard-mode';
+export const HIGH_CONTRAST_KEY = 'wordmente-high-contrast';
 export const STATS_KEY = 'wordmente-stats';
 
 /** Bumped whenever the saved shape changes, so an old entry is ignored rather than misread. */
@@ -83,6 +84,19 @@ export const readEntry = (storage: Storage | undefined, key: string): string | u
   }
 };
 
+/** Reads an on/off preference, falling back to off when it is missing or unreadable. */
+const readFlag = (storage: Storage | undefined, key: string): boolean => {
+  const raw = readEntry(storage, key);
+  if (raw === undefined) {
+    return false;
+  }
+  if (raw !== 'true' && raw !== 'false') {
+    console.warn(`${key} held an unexpected value, so this preference starts off`, raw);
+    return false;
+  }
+  return raw === 'true';
+};
+
 export const saveDaily = (storage: Storage | undefined, save: DailySave): void => {
   writeEntry(storage, DAILY_KEY, JSON.stringify(save));
 };
@@ -90,6 +104,16 @@ export const saveDaily = (storage: Storage | undefined, save: DailySave): void =
 export const saveHardMode = (storage: Storage | undefined, hardMode: boolean): void => {
   writeEntry(storage, HARD_MODE_KEY, String(hardMode));
 };
+
+export const loadHardMode = (storage: Storage | undefined): boolean =>
+  readFlag(storage, HARD_MODE_KEY);
+
+export const saveHighContrast = (storage: Storage | undefined, highContrast: boolean): void => {
+  writeEntry(storage, HIGH_CONTRAST_KEY, String(highContrast));
+};
+
+export const loadHighContrast = (storage: Storage | undefined): boolean =>
+  readFlag(storage, HIGH_CONTRAST_KEY);
 
 const isEvaluation = (value: unknown): value is Evaluation =>
   typeof value === 'string' && EVALUATIONS.includes(value);
@@ -170,16 +194,4 @@ export const readDaily = (
   }
 
   return parsed;
-};
-
-export const loadHardMode = (storage: Storage | undefined): boolean => {
-  const raw = readEntry(storage, HARD_MODE_KEY);
-  if (raw === undefined) {
-    return false;
-  }
-  if (raw !== 'true' && raw !== 'false') {
-    console.warn(`${HARD_MODE_KEY} held an unexpected value, so hard mode starts off`, raw);
-    return false;
-  }
-  return raw === 'true';
 };

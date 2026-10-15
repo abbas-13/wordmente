@@ -25,6 +25,15 @@
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* The colour-blind-safe palette. Green and amber are the pair that collapses for
+   the most common forms of colour blindness, so correct becomes orange and present
+   becomes blue. Every surface reads these variables — tiles, keys, the statistics
+   bars — so nothing else has to know this setting exists. */
+:root[data-contrast="high"] {
+  --correct: #f5793a;
+  --present: #85c0f9;
+}
+
 * {
   box-sizing: border-box;
 }
