@@ -9,7 +9,7 @@
  * outright — so a spec would throw before it could assert anything. The shim
  * below covers exactly the two methods the app calls. It is not a modal: it says
  * nothing about focus trapping, inertness or ::backdrop, which only a real
- * browser can show. Those are checked by eye.
+ * browser can show.
  */
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
