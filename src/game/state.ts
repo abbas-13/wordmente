@@ -38,7 +38,7 @@ export type GameAction =
   | { type: 'SUBMIT_GUESS' }
   | { type: 'REVEAL_COMPLETE' }
   | { type: 'START_GAME'; mode: GameMode; solution: string }
-  | { type: 'TOGGLE_HARD_MODE' };
+  | { type: 'SET_HARD_MODE'; hardMode: boolean };
 
 export interface GameSetup {
   solution: string;
@@ -155,8 +155,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'START_GAME': {
       return createGameState({ ...state, mode: action.mode, solution: action.solution });
     }
-    case 'TOGGLE_HARD_MODE': {
-      return { ...state, hardMode: !state.hardMode };
+    case 'SET_HARD_MODE': {
+      // An explicit value, not a flip: the whole app shares one preference, and
+      // setting both boards to the same value keeps them from drifting apart.
+      return state.hardMode === action.hardMode ? state : { ...state, hardMode: action.hardMode };
     }
     default: {
       throw new Error(`unhandled game action: ${JSON.stringify(action)}`);

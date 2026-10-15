@@ -8,7 +8,7 @@ import type { GameSetup } from './game/state';
 
 const GAME: GameSetup = {
   solution: 'crane',
-  dictionary: new Set(['slate', 'abide', 'crate', 'bleak', 'elder', 'fable']),
+  dictionary: new Set(['slate', 'abide', 'crate', 'bleak', 'elder', 'fable', 'clove']),
 };
 
 /** Six valid words that are none of them the solution. */
@@ -35,6 +35,8 @@ const waitForInput = () =>
   waitFor(() => {
     expect(screen.getByRole('button', { name: 'Q' })).toBeEnabled();
   });
+
+const hardModeSwitch = () => screen.getByRole('checkbox', { name: /hard mode/i });
 
 describe('App', () => {
   it('renders the board and the keyboard', () => {
@@ -196,5 +198,90 @@ describe('App', () => {
 
     expect(screen.getByText(/^Puzzle #\d+$/)).toBeInTheDocument();
     expect(lettersAt(0)).toEqual(['', '', '', '', '']);
+  });
+
+  it('keeps the daily board when switching to practice and back', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await waitForInput();
+
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.click(screen.getByRole('button', { name: 'Daily' }));
+
+    expect(lettersAt(0)).toEqual(['s', 'l', 'a', 't', 'e']);
+    expect(statesAt(0)).toEqual(['absent', 'absent', 'correct', 'absent', 'correct']);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('keeps the practice board when switching away and back', async () => {
+    const { user } = renderApp();
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.keyboard(`${allowedGuesses[0]}{Enter}`);
+    await waitForInput();
+
+    await user.click(screen.getByRole('button', { name: 'Daily' }));
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+
+    expect(lettersAt(0)).toEqual([...allowedGuesses[0]]);
+  });
+
+  it('clears only the practice board when a new word is drawn', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await waitForInput();
+
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.keyboard(`${allowedGuesses[0]}{Enter}`);
+    await waitForInput();
+    await user.click(screen.getByRole('button', { name: 'New word' }));
+    expect(lettersAt(0)).toEqual(['', '', '', '', '']);
+
+    await user.click(screen.getByRole('button', { name: 'Daily' }));
+    expect(lettersAt(0)).toEqual(['s', 'l', 'a', 't', 'e']);
+  });
+
+  it('keeps the board when hard mode is switched on', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await waitForInput();
+
+    await user.click(hardModeSwitch());
+
+    expect(hardModeSwitch()).toBeChecked();
+    expect(lettersAt(0)).toEqual(['s', 'l', 'a', 't', 'e']);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('applies hard mode to both boards', async () => {
+    const { user } = renderApp();
+    await user.click(hardModeSwitch());
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+
+    expect(hardModeSwitch()).toBeChecked();
+  });
+
+  it('rejects a guess that contradicts the revealed letters once hard mode is on', async () => {
+    const { user } = renderApp();
+    await user.click(hardModeSwitch());
+    await user.keyboard('crate{Enter}');
+    await waitForInput();
+
+    await user.keyboard('clove{Enter}');
+
+    expect(screen.getByRole('status')).toHaveTextContent('2nd letter must be R');
+    expect(lettersAt(0)).toEqual(['c', 'r', 'a', 't', 'e']);
+    expect(statesAt(1)).toEqual(['typing', 'typing', 'typing', 'typing', 'typing']);
+  });
+
+  it('finishes a reveal even when the player switches boards mid-flip', async () => {
+    const { user } = renderApp();
+    await user.keyboard('slate{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+    await user.keyboard(`${allowedGuesses[0]}{Enter}`);
+    await user.click(screen.getByRole('button', { name: 'Daily' }));
+
+    await waitForInput();
+    await user.keyboard('c');
+    expect(lettersAt(1)).toEqual(['c', '', '', '', '']);
   });
 });

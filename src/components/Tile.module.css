@@ -37,8 +37,8 @@
 }
 
 /* The reveal: a 240ms flip staggered 40ms per column, so the last tile lands at
-   160 + 240 = the 400ms reveal window in App.tsx (REVEAL_DURATION_MS). Change one,
-   change the other. */
+   160 + 240 = the 400ms reveal window in src/game/constants.ts
+   (REVEAL_DURATION_MS). Change one, change the other. */
 .tile[data-state="correct"],
 .tile[data-state="present"],
 .tile[data-state="absent"] {
