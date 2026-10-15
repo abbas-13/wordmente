@@ -60,6 +60,10 @@ const cellsForRow = (
   return emptyRow;
 };
 
+/** Only a submitted row of all-correct tiles can be the solved one. */
+const isSolved = (guess: string | undefined, evaluations: Evaluation[] | undefined): boolean =>
+  Boolean(guess && evaluations?.every((evaluation) => evaluation === 'correct'));
+
 const Board = ({ guesses, evaluations, current, isInvalid = false }: BoardProps) => {
   const activeRow = guesses.length;
 
@@ -71,6 +75,7 @@ const Board = ({ guesses, evaluations, current, isInvalid = false }: BoardProps)
             className={styles.row}
             key={rowKey}
             data-invalid={rowIndex === activeRow && isInvalid ? 'true' : undefined}
+            data-win={isSolved(guesses[rowIndex], evaluations[rowIndex]) ? 'true' : undefined}
           >
             {cellsForRow(rowIndex, guesses, evaluations, current, activeRow).map((cell) => (
               <Tile key={cell.key} letter={cell.letter} state={cell.state} />

@@ -4,6 +4,8 @@ import styles from './GameControls.module.css';
 interface GameControlsProps {
   mode: GameMode;
   hardMode: boolean;
+  /** True once a guess is in play with hard mode on, so the setting cannot be undone. */
+  hardModeLocked: boolean;
   /** Switch which board is on screen. Neither board is reset. */
   onSelect: (mode: GameMode) => void;
   /** Draw a fresh practice word; the only thing that discards a board. */
@@ -14,6 +16,7 @@ interface GameControlsProps {
 const GameControls = ({
   mode,
   hardMode,
+  hardModeLocked,
   onSelect,
   onNewWord,
   onSetHardMode,
@@ -46,10 +49,13 @@ const GameControls = ({
         type="checkbox"
         className={styles.checkbox}
         checked={hardMode}
+        disabled={hardModeLocked}
         onChange={(event) => onSetHardMode(event.target.checked)}
       />
       Hard mode
     </label>
+
+    {hardModeLocked && <p className={styles.hint}>Hard mode stays on once a guess is in play</p>}
   </div>
 );
 

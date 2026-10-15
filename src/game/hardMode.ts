@@ -1,5 +1,5 @@
 import { ordinal } from './ordinal';
-import type { Evaluation } from './types';
+import type { Evaluation, GameStatus } from './types';
 
 export interface HardModeResult {
   validGuess: boolean;
@@ -67,3 +67,17 @@ export const validateHardMode = (
 
   return { validGuess: true };
 };
+
+/**
+ * Whether the hard mode switch is past changing.
+ *
+ * Hard mode can be turned on at any time, but once a guess is in play it is
+ * locked on: turning it off mid-game would release a player from a constraint
+ * they have already been held to, which is the same escape hatch as clearing the
+ * board. It frees up again when the game ends.
+ */
+export const isHardModeLocked = (board: {
+  hardMode: boolean;
+  status: GameStatus;
+  guesses: string[];
+}): boolean => board.hardMode && board.status === 'IN_PROGRESS' && board.guesses.length > 0;

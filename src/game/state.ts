@@ -32,13 +32,17 @@ export interface GameState {
   message?: string;
 }
 
+/** The part of a board that survives a reload, and can be handed between boards. */
+export type GameBoard = Pick<GameState, 'solution' | 'guesses' | 'evaluations' | 'status'>;
+
 export type GameAction =
   | { type: 'ADD_LETTER'; letter: string }
   | { type: 'DELETE_LETTER' }
   | { type: 'SUBMIT_GUESS' }
   | { type: 'REVEAL_COMPLETE' }
   | { type: 'START_GAME'; mode: GameMode; solution: string }
-  | { type: 'SET_HARD_MODE'; hardMode: boolean };
+  | { type: 'SET_HARD_MODE'; hardMode: boolean }
+  | { type: 'RESTORE_GAME'; board: GameBoard };
 
 export interface GameSetup {
   solution: string;
@@ -138,6 +142,11 @@ const submitGuess = (state: GameState): GameState => {
   };
 };
 
+/** Compares only the fields a saved board carries, which is what a restore brings in. */
+const sameBoard = (state: GameState, board: GameBoard): boolean =>
+  JSON.stringify([state.solution, state.guesses, state.evaluations, state.status]) ===
+  JSON.stringify([board.solution, board.guesses, board.evaluations, board.status]);
+
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'ADD_LETTER': {
@@ -159,6 +168,20 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       // An explicit value, not a flip: the whole app shares one preference, and
       // setting both boards to the same value keeps them from drifting apart.
       return state.hardMode === action.hardMode ? state : { ...state, hardMode: action.hardMode };
+    }
+    case 'RESTORE_GAME': {
+      // A board already on screen is a no-op, and not merely an optimisation: two
+      // tabs would otherwise write at each other for as long as they stayed open.
+      if (sameBoard(state, action.board)) {
+        return state;
+      }
+      return {
+        ...state,
+        ...action.board,
+        current: '',
+        isRevealing: false,
+        message: undefined,
+      };
     }
     default: {
       throw new Error(`unhandled game action: ${JSON.stringify(action)}`);
