@@ -23,6 +23,7 @@ const lettersOf = (row: HTMLElement): string[] =>
   cellsOf(row).map((cell) => cell.textContent ?? '');
 
 const absent: Evaluation[] = ['absent', 'absent', 'absent', 'absent', 'absent'];
+const solved: Evaluation[] = ['correct', 'correct', 'correct', 'correct', 'correct'];
 
 describe('Board', () => {
   it('renders six rows of five cells', () => {
@@ -94,5 +95,13 @@ describe('Board', () => {
     for (const row of screen.getAllByRole('row')) {
       expect(row).not.toHaveAttribute('data-invalid');
     }
+  });
+
+  it('marks a solved row so it can celebrate, and only that row', () => {
+    renderBoard({ guesses: ['slate', 'crane'], evaluations: [absent, solved] });
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveAttribute('data-win', 'true');
+    expect(rows[0]).not.toHaveAttribute('data-win');
+    expect(rows[2]).not.toHaveAttribute('data-win');
   });
 });

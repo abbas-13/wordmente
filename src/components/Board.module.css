@@ -3,8 +3,8 @@
   border-spacing: 0.375rem;
 }
 
-/* A rejected row is outlined rather than animated, so it stays legible when
-   animations are disabled. */
+/* The outline says which row was rejected; the movement that goes with it lives
+   with the tiles, because a table row cannot be transformed. */
 .row[data-invalid="true"] td {
   border-color: var(--invalid);
 }

@@ -62,6 +62,37 @@
   animation-delay: 160ms;
 }
 
+/* A rejected row shudders once, when the rejection lands. The row itself cannot be
+   transformed, so the movement is applied to its tiles. */
+tr[data-invalid="true"] .tile {
+  animation: shake 320ms ease;
+}
+
+/* A solved row hops in a wave after its flip has finished, so the tiles celebrate
+   left to right. The two animations are listed together: the cascade is second so
+   it wins the shared `transform` property once it starts. */
+tr[data-win="true"] .tile {
+  animation:
+    flip 240ms ease both,
+    cascade 600ms ease 420ms both;
+}
+
+tr[data-win="true"] .tile:nth-child(2) {
+  animation-delay: 40ms, 500ms;
+}
+
+tr[data-win="true"] .tile:nth-child(3) {
+  animation-delay: 80ms, 580ms;
+}
+
+tr[data-win="true"] .tile:nth-child(4) {
+  animation-delay: 120ms, 660ms;
+}
+
+tr[data-win="true"] .tile:nth-child(5) {
+  animation-delay: 160ms, 740ms;
+}
+
 @keyframes flip {
   0% {
     transform: rotateX(0deg);
@@ -76,9 +107,42 @@
   }
 }
 
-/* Same specificity as the animation rule above, so source order decides — keep last. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-0.35rem);
+  }
+
+  50% {
+    transform: translateX(0.3rem);
+  }
+
+  75% {
+    transform: translateX(-0.15rem);
+  }
+}
+
+@keyframes cascade {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-0.35rem);
+  }
+}
+
+/* Same specificity as the rules above, so source order decides — keep last. */
 @media (prefers-reduced-motion: reduce) {
-  .tile[data-state] {
+  .tile[data-state],
+  tr[data-invalid="true"] .tile,
+  tr[data-win="true"] .tile {
     animation: none;
   }
 }

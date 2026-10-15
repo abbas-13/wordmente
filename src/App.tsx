@@ -8,6 +8,7 @@ import Stats from './components/Stats';
 import Toast from './components/Toast';
 import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
+import { isHardModeLocked } from './game/hardMode';
 import { computeKeyboardState } from './game/keyboard';
 import { describeOutcome } from './game/outcome';
 import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
@@ -15,7 +16,9 @@ import type { GameSetup, GameState } from './game/state';
 import { createGameState, gameReducer } from './game/state';
 import { loadStats, recordDailyResult } from './game/stats';
 import {
+  DAILY_KEY,
   getStorage,
+  HARD_MODE_KEY,
   loadHardMode,
   readDaily,
   saveDaily,
@@ -104,6 +107,8 @@ const App = ({ setup }: AppProps = {}) => {
   const outcome = describeOutcome(state);
   const { guesses, evaluations, status, hardMode } = daily;
   const guessCount = guesses.length;
+  // The preference is shared, so either board holding a guess in play locks it.
+  const hardModeLocked = isHardModeLocked(daily) || isHardModeLocked(practice);
 
   const handleLetter = useCallback(
     (letter: string) => {
@@ -178,6 +183,49 @@ const App = ({ setup }: AppProps = {}) => {
     setStats(recordDailyResult(storage, { puzzle, status, guesses: guessCount }));
   }, [setup, storage, puzzle, status, guessCount]);
 
+  /**
+   * Follow along when another tab changes the saved game.
+   *
+   * The browser fires this only in the *other* tabs, which is exactly what is
+   * needed: a tab whose picture is stale adopts the newer board instead of
+   * overwriting it with what it had.
+   */
+  useEffect(() => {
+    if (setup || !storage) {
+      return;
+    }
+
+    const handleStorage = (event: StorageEvent): void => {
+      if (event.key === DAILY_KEY) {
+        const saved = readDaily(storage, { puzzle, solution });
+        if (saved) {
+          dispatchDaily({
+            type: 'RESTORE_GAME',
+            board: {
+              solution: saved.solution,
+              guesses: saved.guesses,
+              evaluations: saved.evaluations,
+              status: saved.status,
+            },
+          });
+        }
+        return;
+      }
+
+      if (event.key === HARD_MODE_KEY) {
+        const preference = loadHardMode(storage);
+        dispatchDaily({ type: 'SET_HARD_MODE', hardMode: preference });
+        dispatchPractice({ type: 'SET_HARD_MODE', hardMode: preference });
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [setup, storage, puzzle, solution]);
+
   const startedPuzzle = useRef(puzzle);
   useEffect(() => {
     if (startedPuzzle.current === puzzle) {
@@ -202,6 +250,7 @@ const App = ({ setup }: AppProps = {}) => {
       <GameControls
         mode={state.mode}
         hardMode={state.hardMode}
+        hardModeLocked={hardModeLocked}
         onSelect={handleSelect}
         onNewWord={handleNewWord}
         onSetHardMode={handleSetHardMode}
