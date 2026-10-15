@@ -34,11 +34,6 @@ const NextPuzzle = ({ resetAt }: NextPuzzleProps) => {
     };
   }, [resetAt]);
 
-  const resetsAt = resetAt.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
   return (
     <div className={styles.next}>
       <p className={styles.countdown}>
