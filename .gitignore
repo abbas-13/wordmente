@@ -8,6 +8,10 @@ dist/
 # Test output
 coverage/
 
+# End-to-end test output
+test-results/
+playwright-report/
+
 # TypeScript incremental build info
 *.tsbuildinfo
 
