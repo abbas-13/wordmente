@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { MAX_GUESSES } from '../game/constants';
 import type { Stats as StatsData } from '../game/stats';
@@ -8,35 +8,76 @@ import styles from './Stats.module.css';
 /** The guess counts, in the order the distribution stores them. */
 const GUESS_NUMBERS = Array.from({ length: MAX_GUESSES }, (_, index) => index + 1);
 
+const HEADING_ID = 'stats-heading';
+
 interface StatsProps {
   stats: StatsData;
+  /** Told whenever the dialog opens or closes, so the app can hold back the board's keys. */
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 /**
- * The tally, folded away behind a toggle.
+ * The tally, in a modal opened from the header button.
  *
- * It stays closed until asked for so finishing a game does not move the page
- * under a player who is still reading the board.
+ * A native <dialog> rather than a hand-built overlay: the browser already does
+ * the focus trapping, the top layer, the backdrop and Escape, and getting those
+ * right by hand is where hand-rolled modals go wrong.
  */
-const Stats = ({ stats }: StatsProps) => {
+const Stats = ({ stats, onOpenChange }: StatsProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const best = Math.max(...stats.distribution, 1);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    dialogRef.current?.showModal();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    // Escape closes a native modal without React hearing about it, so the state
+    // follows the element rather than the other way round.
+    const handleClose = (): void => {
+      setIsOpen(false);
+      onOpenChange?.(false);
+    };
+    dialog.addEventListener('close', handleClose);
+
+    return () => {
+      dialog.removeEventListener('close', handleClose);
+    };
+  }, [isOpen, onOpenChange]);
+
   return (
-    <div className={styles.stats}>
+    <>
       <button
         type="button"
         className={styles.toggle}
+        aria-haspopup="dialog"
         aria-expanded={isOpen}
         onClick={() => {
-          setIsOpen((open) => !open);
+          setIsOpen(true);
+          onOpenChange?.(true);
         }}
       >
         Statistics
       </button>
 
       {isOpen && (
-        <section className={styles.panel} aria-label="Statistics">
+        <dialog ref={dialogRef} className={styles.dialog} aria-labelledby={HEADING_ID}>
+          <h2 id={HEADING_ID} className={styles.heading}>
+            Statistics
+          </h2>
+
           <dl className={styles.tally}>
             <dt>Played</dt>
             <dd>{stats.played}</dd>
@@ -48,7 +89,7 @@ const Stats = ({ stats }: StatsProps) => {
             <dd>{stats.maxStreak}</dd>
           </dl>
 
-          <h2 className={styles.heading}>Guess distribution</h2>
+          <h3 className={styles.subheading}>Guess distribution</h3>
           <ol className={styles.distribution}>
             {GUESS_NUMBERS.map((guessNumber) => {
               const count = stats.distribution[guessNumber - 1] ?? 0;
@@ -67,9 +108,19 @@ const Stats = ({ stats }: StatsProps) => {
               );
             })}
           </ol>
-        </section>
+
+          <button
+            type="button"
+            className={styles.close}
+            onClick={() => {
+              dialogRef.current?.close();
+            }}
+          >
+            Close
+          </button>
+        </dialog>
       )}
-    </div>
+    </>
   );
 };
 

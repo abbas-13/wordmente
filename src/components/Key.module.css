@@ -1,13 +1,15 @@
 .key {
-  min-width: 2rem;
-  padding: 0.75rem 0.5rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 1rem 0.2rem;
   border: 1px solid var(--border);
   border-radius: 0.25rem;
   background: var(--surface-raised);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  line-height: 1;
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -35,9 +37,37 @@
   color: var(--muted);
 }
 
+/* Enter and Backspace take the space of a letter and a half, the way the real
+   keyboard rows are laid out. */
 .wide {
-  min-width: 4.5rem;
-  font-size: 0.6875rem;
+  flex: 1.5 1 0;
+  font-size: 0.6rem;
+}
+
+.glyph {
+  display: none;
+  font-size: 1.2rem;
+}
+
+/* Backspace is always its symbol: eight letters never fit a 1.5-key at a legible
+   size, so there is nothing to reveal. Enter can be spelled out, but only past the
+   width where the word still fits inside the key. */
+.wide .glyph {
+  display: inline;
+}
+
+@media (min-width: 30rem) {
+  .spelled-out .glyph {
+    display: none;
+  }
+
+  .spelled-out .word {
+    display: inline;
+  }
+}
+
+.word {
+  display: none;
 }
 
 .key:hover:not(:disabled) {
