@@ -46,5 +46,14 @@ export const waitForInput = (): Promise<void> =>
     expect(screen.getByRole('button', { name: 'Q' })).toBeEnabled();
   });
 
+export const isInputLocked = (): boolean =>
+  screen.getByRole('button', { name: 'Q' }).hasAttribute('disabled');
+
 export const hardModeSwitch = (): HTMLElement =>
   screen.getByRole('checkbox', { name: /hard mode/i });
+
+export const statsToggle = (): HTMLElement => screen.getByRole('button', { name: 'Statistics' });
+
+/** The value paired with a label in the statistics tally. */
+export const statValue = (label: string): string =>
+  screen.getByText(label).nextElementSibling?.textContent ?? '';

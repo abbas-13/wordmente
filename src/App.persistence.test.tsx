@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,13 +6,19 @@ import App from './App';
 import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
 import { dailyAnswer, puzzleNumberForDate } from './game/puzzle';
+import { scoreGuess } from './game/scoring';
+import { loadStats } from './game/stats';
 import { saveDaily, saveHardMode } from './game/storage';
 import {
   ALL_CORRECT,
   hardModeSwitch,
+  isInputLocked,
   lettersAt,
   renderApp,
   statesAt,
+  statsToggle,
+  statValue,
+  WRONG_GUESSES,
   waitForInput,
 } from './test/board';
 
@@ -20,6 +26,25 @@ import {
 const today = new Date();
 const solution = dailyAnswer(answers, today);
 const puzzle = puzzleNumberForDate(today);
+
+/** A completed daily board, as it would have been left by the game that played it. */
+const finishedBoard = (status: 'WIN' | 'FAIL') => {
+  const guesses = status === 'WIN' ? [solution] : WRONG_GUESSES;
+  return {
+    version: 1,
+    puzzle,
+    solution,
+    guesses,
+    evaluations: guesses.map((guess) => scoreGuess(guess, solution)),
+    status,
+  };
+};
+
+/** A scored row proves the guess landed, whether or not it ended the game. */
+const waitForScoredRow = (index: number): Promise<void> =>
+  waitFor(() => {
+    expect(statesAt(index).every((state) => state !== 'empty' && state !== 'typing')).toBe(true);
+  });
 
 describe('the daily board across reloads', () => {
   afterEach(() => {
@@ -111,4 +136,57 @@ describe('the daily board across reloads', () => {
     expect(lettersAt(0)).toEqual(['', '', '', '', '']);
     expect(screen.getByText(/^Puzzle #\d+$/).textContent).not.toBe(before);
   });
+});
+
+describe('the statistics', () => {
+  it('count a finished daily', async () => {
+    saveDaily(window.localStorage, finishedBoard('WIN'));
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(statsToggle());
+
+    expect(statValue('Played')).toBe('1');
+    expect(statValue('Win %')).toBe('100');
+    expect(statValue('Current streak')).toBe('1');
+  });
+
+  it('count a lost daily as played but not won', async () => {
+    saveDaily(window.localStorage, finishedBoard('FAIL'));
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(statsToggle());
+
+    expect(statValue('Played')).toBe('1');
+    expect(statValue('Win %')).toBe('0');
+    expect(statValue('Current streak')).toBe('0');
+  });
+
+  it('count the same daily once, however many reloads it takes', () => {
+    saveDaily(window.localStorage, finishedBoard('WIN'));
+
+    render(<App />).unmount();
+    render(<App />);
+
+    expect(loadStats(window.localStorage).played).toBe(1);
+  });
+
+  it('leave practice games out', async () => {
+    render(<App />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Practice' }));
+
+    // The practice word is drawn at random, so the round can end before six
+    // guesses: stop as soon as the game is over, either way.
+    for (const [index, word] of WRONG_GUESSES.entries()) {
+      if (isInputLocked()) {
+        break;
+      }
+      await user.keyboard(`${word}{Enter}`);
+      await waitForScoredRow(index);
+    }
+
+    expect(loadStats(window.localStorage).played).toBe(0);
+  }, 20000);
 });

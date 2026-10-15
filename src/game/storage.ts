@@ -2,12 +2,16 @@ import { MAX_GUESSES, WORD_LENGTH } from './constants';
 import type { GameState } from './state';
 import type { Evaluation, GameStatus } from './types';
 
-/** Where this app keeps the daily board and the player's hard mode preference. */
+/** Where this app keeps the daily board, the player's hard mode preference and their tally. */
 export const DAILY_KEY = 'wordmente-daily';
 export const HARD_MODE_KEY = 'wordmente-hard-mode';
+export const STATS_KEY = 'wordmente-stats';
 
 /** Bumped whenever the saved shape changes, so an old entry is ignored rather than misread. */
 export const STORAGE_VERSION = 1;
+
+/** The statistics version moves independently of the board's. */
+export const STATS_VERSION = 1;
 
 const GAME_STATUSES: readonly string[] = ['IN_PROGRESS', 'WIN', 'FAIL'];
 const EVALUATIONS: readonly string[] = ['correct', 'present', 'absent'];
@@ -54,18 +58,20 @@ export const toDailySave = (board: PersistedBoard, puzzle: number): DailySave =>
   status: board.status,
 });
 
-const write = (storage: Storage | undefined, key: string, value: string): void => {
+/** Write an entry, reporting rather than throwing when the browser refuses. */
+export const writeEntry = (storage: Storage | undefined, key: string, value: string): void => {
   if (!storage) {
     return;
   }
   try {
     storage.setItem(key, value);
   } catch (error) {
-    console.warn(`${key} could not be saved, so this game will not survive a reload`, error);
+    console.warn(`${key} could not be saved, so this will not survive a reload`, error);
   }
 };
 
-const read = (storage: Storage | undefined, key: string): string | undefined => {
+/** Read an entry, reporting rather than throwing when it cannot be reached. */
+export const readEntry = (storage: Storage | undefined, key: string): string | undefined => {
   if (!storage) {
     return undefined;
   }
@@ -78,11 +84,11 @@ const read = (storage: Storage | undefined, key: string): string | undefined => 
 };
 
 export const saveDaily = (storage: Storage | undefined, save: DailySave): void => {
-  write(storage, DAILY_KEY, JSON.stringify(save));
+  writeEntry(storage, DAILY_KEY, JSON.stringify(save));
 };
 
 export const saveHardMode = (storage: Storage | undefined, hardMode: boolean): void => {
-  write(storage, HARD_MODE_KEY, String(hardMode));
+  writeEntry(storage, HARD_MODE_KEY, String(hardMode));
 };
 
 const isEvaluation = (value: unknown): value is Evaluation =>
@@ -130,7 +136,7 @@ export const readDaily = (
   storage: Storage | undefined,
   today: ExpectedDaily,
 ): DailySave | undefined => {
-  const raw = read(storage, DAILY_KEY);
+  const raw = readEntry(storage, DAILY_KEY);
   if (raw === undefined) {
     return undefined;
   }
@@ -167,7 +173,7 @@ export const readDaily = (
 };
 
 export const loadHardMode = (storage: Storage | undefined): boolean => {
-  const raw = read(storage, HARD_MODE_KEY);
+  const raw = readEntry(storage, HARD_MODE_KEY);
   if (raw === undefined) {
     return false;
   }
