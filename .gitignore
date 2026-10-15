@@ -29,7 +29,12 @@ credentials.json
 Thumbs.db
 desktop.ini
 .idea/
-.vscode/
+.vscode/*
+# ...but share the formatting config, so every clone formats the same way.
+# The directory-contents form above is required: git cannot re-include a file
+# whose parent directory is excluded.
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
 *~
 

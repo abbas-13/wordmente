@@ -1,42 +1,18 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import App from './App';
 import allowedGuesses from './data/allowed-guesses.json';
-import type { GameSetup } from './game/state';
-
-const GAME: GameSetup = {
-  solution: 'crane',
-  dictionary: new Set(['slate', 'abide', 'crate', 'bleak', 'elder', 'fable', 'clove']),
-};
-
-/** Six valid words that are none of them the solution. */
-const WRONG_GUESSES = ['slate', 'abide', 'crate', 'bleak', 'elder', 'fable'];
-
-const renderApp = (setup: GameSetup = GAME) => {
-  render(<App setup={setup} />);
-  return { user: userEvent.setup() };
-};
-
-const rowAt = (index: number): HTMLElement => screen.getAllByRole('row')[index] as HTMLElement;
-
-const cellsAt = (index: number): HTMLElement[] => [
-  ...rowAt(index).querySelectorAll<HTMLElement>('td'),
-];
-
-const lettersAt = (index: number): string[] => cellsAt(index).map((cell) => cell.textContent ?? '');
-
-const statesAt = (index: number): string[] =>
-  cellsAt(index).map((cell) => cell.dataset.state ?? '');
-
-/** Input is locked while a row reveals, so wait for the keyboard to come back. */
-const waitForInput = () =>
-  waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Q' })).toBeEnabled();
-  });
-
-const hardModeSwitch = () => screen.getByRole('checkbox', { name: /hard mode/i });
+import {
+  hardModeSwitch,
+  lettersAt,
+  renderApp,
+  rowAt,
+  statesAt,
+  WRONG_GUESSES,
+  waitForInput,
+} from './test/board';
 
 describe('App', () => {
   it('renders the board and the keyboard', () => {
