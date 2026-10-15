@@ -1,0 +1,11 @@
+.next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.countdown {
+  margin: 0;
+  font-size: 0.8rem;
+}

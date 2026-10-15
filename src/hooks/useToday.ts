@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
 
-const isSameDay = (a: Date, b: Date): boolean => a.toDateString() === b.toDateString();
+import { nextResetAt } from '../game/schedule';
 
-/** Milliseconds from `from` to just after the next local midnight. */
-const untilTomorrow = (from: Date): number => {
-  const next = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1, 0, 0, 1);
-  return next.getTime() - from.getTime();
-};
+const isSameDay = (a: Date, b: Date): boolean => a.toDateString() === b.toDateString();
 
 /**
  * Today's date, re-checked when the tab is refocused and when the clock passes midnight.
@@ -28,10 +24,11 @@ export const useToday = (): Date => {
 
     let timeout = 0;
     const scheduleMidnight = (): void => {
+      const from = new Date();
       timeout = window.setTimeout(() => {
         refresh();
         scheduleMidnight();
-      }, untilTomorrow(new Date()));
+      }, nextResetAt(from).getTime() - from.getTime());
     };
 
     scheduleMidnight();

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import Board from './components/Board';
 import GameControls from './components/GameControls';
 import Keyboard from './components/Keyboard';
+import NextPuzzle from './components/NextPuzzle';
 import Result from './components/Result';
 import Stats from './components/Stats';
 import Toast from './components/Toast';
@@ -12,6 +13,7 @@ import { isHardModeLocked } from './game/hardMode';
 import { computeKeyboardState } from './game/keyboard';
 import { describeOutcome } from './game/outcome';
 import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
+import { nextResetAt } from './game/schedule';
 import type { GameSetup, GameState } from './game/state';
 import { createGameState, gameReducer } from './game/state';
 import { loadStats, recordDailyResult } from './game/stats';
@@ -74,6 +76,8 @@ const App = ({ setup }: AppProps = {}) => {
   const today = useToday();
   const puzzle = puzzleNumberForDate(today);
   const solution = dailyAnswer(answers, today);
+  // Stable for as long as the day is, so the countdown is not restarted by a re-render.
+  const resetAt = useMemo(() => nextResetAt(today), [today]);
   const [startingHardMode] = useState(() =>
     setup ? (setup.hardMode ?? false) : loadHardMode(storage),
   );
@@ -109,6 +113,8 @@ const App = ({ setup }: AppProps = {}) => {
   const guessCount = guesses.length;
   // The preference is shared, so either board holding a guess in play locks it.
   const hardModeLocked = isHardModeLocked(daily) || isHardModeLocked(practice);
+  // A practice round is not what tomorrow waits on, so only the daily counts down.
+  const waitingForTomorrow = activeMode === 'daily' && status !== 'IN_PROGRESS';
 
   const handleLetter = useCallback(
     (letter: string) => {
@@ -257,6 +263,8 @@ const App = ({ setup }: AppProps = {}) => {
       />
 
       {outcome ? <Result outcome={outcome} /> : <Toast message={state.message} />}
+
+      {waitingForTomorrow && <NextPuzzle resetAt={resetAt} />}
 
       <Board
         guesses={state.guesses}
