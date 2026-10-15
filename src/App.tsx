@@ -4,6 +4,7 @@ import Board from './components/Board';
 import GameControls from './components/GameControls';
 import Keyboard from './components/Keyboard';
 import Result from './components/Result';
+import Stats from './components/Stats';
 import Toast from './components/Toast';
 import allowedGuesses from './data/allowed-guesses.json';
 import answers from './data/answers.json';
@@ -12,6 +13,7 @@ import { describeOutcome } from './game/outcome';
 import { dailyAnswer, puzzleNumberForDate, randomAnswer } from './game/puzzle';
 import type { GameSetup, GameState } from './game/state';
 import { createGameState, gameReducer } from './game/state';
+import { loadStats, recordDailyResult } from './game/stats';
 import {
   getStorage,
   loadHardMode,
@@ -72,6 +74,7 @@ const App = ({ setup }: AppProps = {}) => {
   const [startingHardMode] = useState(() =>
     setup ? (setup.hardMode ?? false) : loadHardMode(storage),
   );
+  const [stats, setStats] = useState(() => loadStats(storage));
 
   /**
    * One board per mode, with switching only deciding which is on screen.
@@ -99,6 +102,7 @@ const App = ({ setup }: AppProps = {}) => {
   const isPlaying = state.status === 'IN_PROGRESS' && !state.isRevealing;
   const outcome = describeOutcome(state);
   const { guesses, evaluations, status, hardMode } = daily;
+  const guessCount = guesses.length;
 
   const handleLetter = useCallback(
     (letter: string) => {
@@ -163,6 +167,14 @@ const App = ({ setup }: AppProps = {}) => {
     saveHardMode(storage, hardMode);
   }, [setup, storage, hardMode]);
 
+  useEffect(() => {
+    if (setup || !storage || status === 'IN_PROGRESS') {
+      return;
+    }
+    // Recording is idempotent, so restoring a finished board cannot count it twice.
+    setStats(recordDailyResult(storage, { puzzle, status, guesses: guessCount }));
+  }, [setup, storage, puzzle, status, guessCount]);
+
   const startedPuzzle = useRef(puzzle);
   useEffect(() => {
     if (startedPuzzle.current === puzzle) {
@@ -203,6 +215,8 @@ const App = ({ setup }: AppProps = {}) => {
         onKey={handleKey}
         disabled={!isPlaying}
       />
+
+      <Stats stats={stats} />
     </main>
   );
 };
